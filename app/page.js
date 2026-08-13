@@ -60,6 +60,7 @@ export default function Page() {
         </div>
         <p className="subtitle">
           해외지점 · 해외법인 소재국 경제 · 정치 동향과 은행 영향도 분석 — 국내 언론 제외
+          <span className="schedule">매일 오전 8시 업데이트</span>
         </p>
       </header>
 
@@ -122,6 +123,18 @@ export default function Page() {
           color: var(--muted);
           font-size: 14px;
           margin: 14px 0 0;
+        }
+        .schedule {
+          display: inline-block;
+          margin-left: 10px;
+          padding: 2px 8px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          color: var(--gold);
+          font-family: var(--font-mono), monospace;
+          font-size: 11px;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
         }
         .grid {
           display: grid;
