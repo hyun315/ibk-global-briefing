@@ -7,15 +7,13 @@ import { getAdminDb } from "../../../../lib/firebaseAdmin.js";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const BATCH_SIZE = 3;
-
-// Vercel 환경변수에 ENABLE_AI_ANALYSIS=true 를 추가하기 전까지는
-// Claude API를 호출하지 않고 뉴스 수집만 진행합니다 (비용 발생 없음).
+// Vercel 환경변수에 ENABLE_AI_ANALYSIS=true 를 넣기 전까지는
+// Claude API를 호출하지 않고 뉴스 수집만 합니다 (비용 없음).
 const AI_ENABLED = process.env.ENABLE_AI_ANALYSIS === "true";
 
-// AI 분석을 켜면 지역당 처리 시간이 길어져 한 번에 18개를 다 돌리면 시간 초과가 납니다.
-// ?part=1 / 2 / 3 으로 나눠 실행하세요 (part 미지정 시 전체 시도).
-const PARTS = 3;
+// 한 번의 실행이 60초를 넘지 않도록 지역을 잘게 나눕니다.
+// ?part=1 ~ 6 으로 실행 (part 미지정 시 전체 — AI 켜진 상태에서는 시간초과 가능)
+const PARTS = 6;
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -47,12 +45,19 @@ async function processLocation(location) {
     return {
       locationId: location.id,
       summary: articles.length
-        ? "AI 분석이 비활성화되어 있습니다. 아래 원문 헤드라인을 참고하세요."
+        ? "AI 분석이 비활성화되어 있습니다. 아래 주요 뉴스를 참고하세요."
         : "수집된 기사가 없습니다.",
       impactLevel: "낮음",
       impactAnalysis: "",
       recommendedActions: [],
-      items: [],
+      items: articles.map((a) => ({
+        titleKo: a.title || "",
+        detail: "",
+        titleOriginal: a.title || "",
+        source: a.source || "",
+        link: a.link || "",
+        pubDate: a.pubDate || "",
+      })),
       articles,
       generatedAt: new Date().toISOString(),
     };
@@ -68,44 +73,28 @@ export async function GET(req) {
 
   const targets = selectLocations(req);
   const db = getAdminDb();
-  const startedAt = new Date().toISOString();
-  const results = [];
+  const saved = [];
   const errors = [];
 
-  for (let i = 0; i < targets.length; i += BATCH_SIZE) {
-    const batch = targets.slice(i, i + BATCH_SIZE);
-    const settled = await Promise.allSettled(batch.map(processLocation));
-
-    settled.forEach((outcome, idx) => {
-      const location = batch[idx];
-      if (outcome.status === "fulfilled") {
-        results.push(outcome.value);
-      } else {
-        errors.push({ locationId: location.id, error: String(outcome.reason?.message || outcome.reason) });
-      }
-    });
+  // 핵심: 지역 하나가 끝날 때마다 곧바로 저장.
+  // 도중에 시간이 초과되어도 이미 처리한 지역은 안전하게 반영됩니다.
+  for (const location of targets) {
+    try {
+      const result = await processLocation(location);
+      await db.collection("briefings").doc(location.id).set(result);
+      saved.push(location.id);
+    } catch (err) {
+      errors.push({
+        locationId: location.id,
+        error: String(err?.message || err).slice(0, 300),
+      });
+    }
   }
-
-  const writeBatch = db.batch();
-  results.forEach((r) => {
-    const ref = db.collection("briefings").doc(r.locationId);
-    writeBatch.set(ref, r);
-  });
-  const logRef = db.collection("runLogs").doc();
-  writeBatch.set(logRef, {
-    startedAt,
-    finishedAt: new Date().toISOString(),
-    processed: targets.map((t) => t.id),
-    successCount: results.length,
-    errorCount: errors.length,
-    errors,
-  });
-  await writeBatch.commit();
 
   return NextResponse.json({
     ok: true,
-    processed: targets.map((t) => t.id),
-    successCount: results.length,
+    saved,
+    savedCount: saved.length,
     errorCount: errors.length,
     errors,
   });
