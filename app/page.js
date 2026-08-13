@@ -7,8 +7,6 @@ import { LOCATIONS } from "../lib/locations.js";
 import CountryPanel from "./components/CountryPanel.js";
 import Ticker from "./components/Ticker.js";
 
-const LEVEL_ORDER = { 높음: 0, 중간: 1, 낮음: 2 };
-
 export default function Page() {
   const [briefingsById, setBriefingsById] = useState({});
   const [loading, setLoading] = useState(true);
@@ -23,20 +21,19 @@ export default function Page() {
     return () => unsub();
   }, []);
 
-  const sortedLocations = useMemo(() => {
-    return [...LOCATIONS].sort((a, b) => {
-      const la = LEVEL_ORDER[briefingsById[a.id]?.impactLevel] ?? 3;
-      const lb = LEVEL_ORDER[briefingsById[b.id]?.impactLevel] ?? 3;
-      if (la !== lb) return la - lb;
-      return a.nameKo.localeCompare(b.nameKo, "ko");
-    });
-  }, [briefingsById]);
+  // 표시 순서는 locations.js에 정의된 순서를 그대로 따릅니다.
+  // (중국법인 가나다순 → 인도네시아·폴란드·미얀마 법인 → 지점 가나다순)
+  const orderedLocations = LOCATIONS;
 
   const watchItems = useMemo(() => {
-    return sortedLocations
+    return orderedLocations
       .filter((loc) => ["높음", "중간"].includes(briefingsById[loc.id]?.impactLevel))
-      .map((loc) => ({ code: loc.code, summary: briefingsById[loc.id]?.summary, impactLevel: briefingsById[loc.id]?.impactLevel }));
-  }, [sortedLocations, briefingsById]);
+      .map((loc) => ({
+        code: loc.code,
+        summary: briefingsById[loc.id]?.summary,
+        impactLevel: briefingsById[loc.id]?.impactLevel,
+      }));
+  }, [orderedLocations, briefingsById]);
 
   const latestSync = useMemo(() => {
     const times = Object.values(briefingsById).map((b) => b?.generatedAt).filter(Boolean);
@@ -48,14 +45,17 @@ export default function Page() {
     <main className="page">
       <header className="header">
         <div className="header-top">
-          <div>
-            <span className="mono eyebrow">IBK GLOBAL GROUP</span>
+          <div className="brand">
+            <span className="mono eyebrow">INDUSTRIAL BANK OF KOREA</span>
             <h1 className="display title">GLOBAL WIRE</h1>
           </div>
-          <div className="sync mono">
-            {latestSync
-              ? `마지막 수집 ${new Date(latestSync).toLocaleString("ko-KR", { hour12: false })}`
-              : loading ? "불러오는 중…" : "수집 대기 중"}
+          <div className="meta">
+            <span className="mono dedication">For Leo, with respect — HJ</span>
+            <span className="mono sync">
+              {latestSync
+                ? `마지막 수집 ${new Date(latestSync).toLocaleString("ko-KR", { hour12: false })}`
+                : loading ? "불러오는 중…" : "수집 대기 중"}
+            </span>
           </div>
         </div>
         <p className="subtitle">
@@ -66,7 +66,7 @@ export default function Page() {
       <Ticker items={watchItems} />
 
       <section className="grid">
-        {sortedLocations.map((loc) => (
+        {orderedLocations.map((loc) => (
           <CountryPanel key={loc.id} location={loc} briefing={briefingsById[loc.id]} />
         ))}
       </section>
@@ -85,18 +85,34 @@ export default function Page() {
           justify-content: space-between;
           align-items: flex-end;
           flex-wrap: wrap;
-          gap: 10px;
+          gap: 14px;
+        }
+        .brand {
+          min-width: 0;
         }
         .eyebrow {
           color: var(--gold);
           font-size: 12px;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.16em;
         }
         .title {
           margin: 6px 0 0;
           font-size: 40px;
           font-weight: 700;
           letter-spacing: 0.01em;
+        }
+        .meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+          text-align: right;
+        }
+        .dedication {
+          color: var(--gold);
+          font-size: 12px;
+          letter-spacing: 0.04em;
+          opacity: 0.85;
         }
         .sync {
           color: var(--muted);
@@ -112,6 +128,20 @@ export default function Page() {
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 14px;
           padding: 24px 20px 0;
+        }
+        /* 좁은 화면에서는 은행명과 헌사가 겹치지 않도록 한 줄 아래로 */
+        @media (max-width: 720px) {
+          .header-top {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          .meta {
+            align-items: flex-start;
+            text-align: left;
+          }
+          .title {
+            font-size: 32px;
+          }
         }
       `}</style>
     </main>
