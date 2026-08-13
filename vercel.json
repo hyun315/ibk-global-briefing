@@ -1,10 +1,10 @@
 {
   "crons": [
-    { "path": "/api/cron/update?part=1", "schedule": "0 23 * * *" },
-    { "path": "/api/cron/update?part=2", "schedule": "3 23 * * *" },
-    { "path": "/api/cron/update?part=3", "schedule": "6 23 * * *" },
-    { "path": "/api/cron/update?part=4", "schedule": "9 23 * * *" },
-    { "path": "/api/cron/update?part=5", "schedule": "12 23 * * *" },
-    { "path": "/api/cron/update?part=6", "schedule": "15 23 * * *" }
+    { "path": "/api/cron/update?part=1&span=3", "schedule": "0 23 * * *" },
+    { "path": "/api/cron/update?part=4&span=3", "schedule": "5 23 * * *" },
+    { "path": "/api/cron/update?part=7&span=3", "schedule": "10 23 * * *" },
+    { "path": "/api/cron/update?part=10&span=3", "schedule": "15 23 * * *" },
+    { "path": "/api/cron/update?part=13&span=3", "schedule": "20 23 * * *" },
+    { "path": "/api/cron/update?part=16&span=3", "schedule": "25 23 * * *" }
   ]
 }
