@@ -11,9 +11,10 @@ export const maxDuration = 60;
 // Claude API를 호출하지 않고 뉴스 수집만 합니다 (비용 없음).
 const AI_ENABLED = process.env.ENABLE_AI_ANALYSIS === "true";
 
-// 한 번의 실행이 60초를 넘지 않도록 지역을 잘게 나눕니다.
-// ?part=1 ~ 6 으로 실행 (part 미지정 시 전체 — AI 켜진 상태에서는 시간초과 가능)
-const PARTS = 18;
+// 사용법:
+//   ?part=1          → 1번 지역 하나만 처리 (가장 안전, 수동 실행용)
+//   ?part=1&span=3   → 1번부터 3개 지역 처리 (자동 실행용)
+//   파라미터 없음      → 전체 시도 (AI 켜진 상태에서는 시간초과 가능)
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
@@ -31,11 +32,13 @@ function isAuthorized(req) {
 function selectLocations(req) {
   const url = new URL(req.url);
   const part = parseInt(url.searchParams.get("part") || "0", 10);
-  if (!part || part < 1 || part > PARTS) return LOCATIONS;
+  const span = parseInt(url.searchParams.get("span") || "1", 10);
 
-  const perPart = Math.ceil(LOCATIONS.length / PARTS);
-  const start = (part - 1) * perPart;
-  return LOCATIONS.slice(start, start + perPart);
+  if (!part || part < 1 || part > LOCATIONS.length) return LOCATIONS;
+
+  const start = part - 1;
+  const count = span > 0 ? span : 1;
+  return LOCATIONS.slice(start, start + count);
 }
 
 async function processLocation(location) {
@@ -76,7 +79,7 @@ export async function GET(req) {
   const saved = [];
   const errors = [];
 
-  // 핵심: 지역 하나가 끝날 때마다 곧바로 저장.
+  // 지역 하나가 끝날 때마다 곧바로 저장.
   // 도중에 시간이 초과되어도 이미 처리한 지역은 안전하게 반영됩니다.
   for (const location of targets) {
     try {
