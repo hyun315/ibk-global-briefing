@@ -39,7 +39,7 @@ async function processLocation(location) {
       impactLevel: "낮음",
       impactAnalysis: "",
       recommendedActions: [],
-      keyArticleIndexes: [],
+      items: [],
       articles,
       generatedAt: new Date().toISOString(),
     };
