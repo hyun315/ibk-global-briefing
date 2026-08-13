@@ -46,7 +46,7 @@ export default function Ticker({ items }) {
           display: flex;
           gap: 40px;
           width: max-content;
-          animation: scroll 55s linear infinite;
+          animation: scroll 180s linear infinite;
         }
         .ticker-item {
           display: inline-flex;
