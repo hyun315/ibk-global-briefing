@@ -17,6 +17,7 @@ export default function CountryPanel({ location, briefing }) {
   const [expanded, setExpanded] = useState(false);
   const level = briefing?.impactLevel || "낮음";
   const color = LEVEL_COLOR[level];
+  const items = briefing?.items || [];
 
   return (
     <div className="panel" style={{ "--bar-color": color }}>
@@ -39,29 +40,40 @@ export default function CountryPanel({ location, briefing }) {
           <>
             <p className="summary">{briefing.summary}</p>
 
-            <button className="toggle mono" onClick={() => setExpanded((v) => !v)}>
-              {expanded ? "영향 분석 접기 ▲" : "은행 영향 분석 보기 ▼"}
-            </button>
+            {items.length > 0 && (
+              <div className="report">
+                <span className="section-label mono">주요 뉴스</span>
+                {items.map((item, i) => (
+                  <div className="item" key={i}>
+                    <p className="item-title">{item.titleKo}</p>
+                    {item.detail && <p className="item-detail">{item.detail}</p>}
+                    <span className="item-source mono">
+                      출처: {item.source || "미상"}
+                      {item.titleOriginal ? ` · 원제: ${item.titleOriginal}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {(briefing.impactAnalysis || briefing.recommendedActions?.length > 0) && (
+              <button className="toggle mono" onClick={() => setExpanded((v) => !v)}>
+                {expanded ? "은행 영향 분석 접기 ▲" : "은행 영향 분석 보기 ▼"}
+              </button>
+            )}
 
             {expanded && (
               <div className="detail">
-                <p className="impact">{briefing.impactAnalysis}</p>
+                {briefing.impactAnalysis && <p className="impact">{briefing.impactAnalysis}</p>}
                 {briefing.recommendedActions?.length > 0 && (
-                  <ul className="actions">
-                    {briefing.recommendedActions.map((a, i) => (
-                      <li key={i}>{a}</li>
-                    ))}
-                  </ul>
-                )}
-                {briefing.articles?.length > 0 && (
-                  <div className="sources">
-                    <span className="sources-label mono">SOURCES</span>
-                    {briefing.articles.slice(0, 5).map((a, i) => (
-                      <a href={a.link} target="_blank" rel="noreferrer" key={i} className="source-link">
-                        {a.source ? `${a.source} — ` : ""}{a.title}
-                      </a>
-                    ))}
-                  </div>
+                  <>
+                    <span className="section-label mono">권고 조치</span>
+                    <ul className="actions">
+                      {briefing.recommendedActions.map((a, i) => (
+                        <li key={i}>{a}</li>
+                      ))}
+                    </ul>
+                  </>
                 )}
               </div>
             )}
@@ -102,30 +114,63 @@ export default function CountryPanel({ location, briefing }) {
           letter-spacing: 0.05em;
           margin-right: 8px;
         }
-        .type {
-          color: var(--muted);
-          font-size: 12px;
-        }
-        .level {
-          font-size: 12px;
-          letter-spacing: 0.05em;
-        }
+        .type { color: var(--muted); font-size: 12px; }
+        .level { font-size: 12px; letter-spacing: 0.05em; }
         .name {
           margin: 0 0 2px;
           font-size: 20px;
           font-weight: 700;
         }
-        .updated {
-          color: var(--muted);
-          font-size: 11px;
-        }
+        .updated { color: var(--muted); font-size: 11px; }
         .summary {
           font-size: 14px;
-          line-height: 1.55;
+          line-height: 1.6;
           color: var(--text);
-          margin: 12px 0;
+          margin: 12px 0 14px;
         }
         .summary.muted { color: var(--muted); }
+        .section-label {
+          display: block;
+          color: var(--gold);
+          font-size: 10px;
+          letter-spacing: 0.14em;
+          margin-bottom: 8px;
+        }
+        .report {
+          border-top: 1px solid var(--border);
+          padding-top: 12px;
+          margin-bottom: 14px;
+        }
+        .item {
+          padding-bottom: 12px;
+          margin-bottom: 12px;
+          border-bottom: 1px dashed var(--border);
+        }
+        .item:last-child {
+          border-bottom: none;
+          margin-bottom: 0;
+          padding-bottom: 0;
+        }
+        .item-title {
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 1.5;
+          margin: 0 0 4px;
+          color: var(--text);
+        }
+        .item-detail {
+          font-size: 13px;
+          line-height: 1.55;
+          color: var(--text);
+          opacity: 0.85;
+          margin: 0 0 6px;
+        }
+        .item-source {
+          display: block;
+          font-size: 11px;
+          color: var(--muted);
+          line-height: 1.45;
+        }
         .toggle {
           background: none;
           border: none;
@@ -141,37 +186,17 @@ export default function CountryPanel({ location, briefing }) {
         }
         .impact {
           font-size: 13px;
-          line-height: 1.55;
+          line-height: 1.6;
           color: var(--text);
-          margin: 0 0 10px;
+          margin: 0 0 12px;
         }
         .actions {
-          margin: 0 0 12px;
+          margin: 0;
           padding-left: 18px;
           font-size: 13px;
           color: var(--text);
-          line-height: 1.6;
+          line-height: 1.65;
         }
-        .sources {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .sources-label {
-          color: var(--muted);
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          margin-bottom: 2px;
-        }
-        .source-link {
-          font-size: 12px;
-          color: var(--muted);
-          text-decoration: none;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .source-link:hover { color: var(--text); text-decoration: underline; }
       `}</style>
     </div>
   );
