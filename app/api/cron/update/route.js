@@ -13,7 +13,7 @@ const AI_ENABLED = process.env.ENABLE_AI_ANALYSIS === "true";
 
 // 한 번의 실행이 60초를 넘지 않도록 지역을 잘게 나눕니다.
 // ?part=1 ~ 6 으로 실행 (part 미지정 시 전체 — AI 켜진 상태에서는 시간초과 가능)
-const PARTS = 6;
+const PARTS = 18;
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
