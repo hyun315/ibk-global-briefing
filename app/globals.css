@@ -1,1 +1,44 @@
+:root {
+  --ink: #0b1220;
+  --panel: #141b2e;
+  --panel-raised: #1a2338;
+  --border: #26314a;
+  --text: #e8ecf4;
+  --muted: #8b96ac;
+  --gold: #c9a227;
+  --high: #e0524a;
+  --mid: #d9a441;
+  --low: #4fa490;
+}
 
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+body {
+  background-image:
+    linear-gradient(180deg, rgba(201,162,39,0.06), transparent 240px),
+    radial-gradient(circle at 15% 0%, rgba(79,164,144,0.08), transparent 45%);
+}
+
+.mono { font-family: var(--font-mono), monospace; }
+.display { font-family: var(--font-display), sans-serif; }
+
+::selection { background: var(--gold); color: #0b1220; }
+
+a { color: inherit; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
