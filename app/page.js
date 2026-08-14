@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebaseClient.js";
-import { LOCATIONS } from "../lib/locations.js";
+import { LOCATIONS, GROUPS } from "../lib/locations.js";
 import CountryPanel from "./components/CountryPanel.js";
 import Ticker from "./components/Ticker.js";
 
@@ -21,19 +21,15 @@ export default function Page() {
     return () => unsub();
   }, []);
 
-  // 표시 순서는 locations.js에 정의된 순서를 그대로 따릅니다.
-  // (중국법인 가나다순 → 인도네시아·폴란드·미얀마 법인 → 지점 가나다순)
-  const orderedLocations = LOCATIONS;
-
   const watchItems = useMemo(() => {
-    return orderedLocations
+    return LOCATIONS
       .filter((loc) => ["높음", "중간"].includes(briefingsById[loc.id]?.impactLevel))
       .map((loc) => ({
         code: loc.code,
         summary: briefingsById[loc.id]?.summary,
         impactLevel: briefingsById[loc.id]?.impactLevel,
       }));
-  }, [orderedLocations, briefingsById]);
+  }, [briefingsById]);
 
   const latestSync = useMemo(() => {
     const times = Object.values(briefingsById).map((b) => b?.generatedAt).filter(Boolean);
@@ -66,11 +62,26 @@ export default function Page() {
 
       <Ticker items={watchItems} />
 
-      <section className="grid">
-        {orderedLocations.map((loc) => (
-          <CountryPanel key={loc.id} location={loc} briefing={briefingsById[loc.id]} />
-        ))}
-      </section>
+      {GROUPS.map((group) => {
+        const members = LOCATIONS.filter((loc) => loc.group === group.key);
+        if (!members.length) return null;
+
+        return (
+          <section className="group" key={group.key}>
+            <div className="group-head">
+              <h2 className="display group-title">{group.label}</h2>
+              {group.note && <span className="mono group-note">{group.note}</span>}
+              <span className="group-line" />
+              <span className="mono group-count">{members.length}</span>
+            </div>
+            <div className="grid">
+              {members.map((loc) => (
+                <CountryPanel key={loc.id} location={loc} briefing={briefingsById[loc.id]} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       <style jsx>{`
         .page {
@@ -88,9 +99,7 @@ export default function Page() {
           flex-wrap: wrap;
           gap: 14px;
         }
-        .brand {
-          min-width: 0;
-        }
+        .brand { min-width: 0; }
         .eyebrow {
           color: var(--gold);
           font-size: 12px;
@@ -136,13 +145,42 @@ export default function Page() {
           letter-spacing: 0.02em;
           white-space: nowrap;
         }
+        .group {
+          padding: 0 20px;
+          margin-top: 32px;
+        }
+        .group-head {
+          display: flex;
+          align-items: baseline;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+        .group-title {
+          margin: 0;
+          font-size: 17px;
+          font-weight: 700;
+          color: var(--text);
+          white-space: nowrap;
+        }
+        .group-note {
+          font-size: 11px;
+          color: var(--muted);
+          white-space: nowrap;
+        }
+        .group-line {
+          flex: 1;
+          height: 1px;
+          background: var(--border);
+        }
+        .group-count {
+          font-size: 11px;
+          color: var(--gold);
+        }
         .grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 14px;
-          padding: 24px 20px 0;
         }
-        /* 좁은 화면에서는 은행명과 헌사가 겹치지 않도록 한 줄 아래로 */
         @media (max-width: 720px) {
           .header-top {
             flex-direction: column;
@@ -152,9 +190,8 @@ export default function Page() {
             align-items: flex-start;
             text-align: left;
           }
-          .title {
-            font-size: 32px;
-          }
+          .title { font-size: 32px; }
+          .group-note { display: none; }
         }
       `}</style>
     </main>
